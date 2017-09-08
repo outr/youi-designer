@@ -6,7 +6,8 @@ import io.youi.http._
 object ServerDesignerApplication extends ServerApplication with DesignerApplication {
   handler.matcher(
     combined.any(
-      path.exact("/")
+      path.exact("/"),
+      path.exact("/import")
     )
   ).page()
 
