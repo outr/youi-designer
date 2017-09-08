@@ -1,13 +1,13 @@
 package io.youi.designer
 
-import com.outr.psd.PSD
+import com.outr.psd.{PSD, PSDNode}
 import io.youi._
 import io.youi.app.screen.{PathActivation, UIScreen}
 import io.youi.component.{Container, ImageView, ScrollSupport, Text}
 import io.youi.datatransfer.DataTransferManager
 import io.youi.font.{Font, GoogleFont}
 import io.youi.image.Image
-import io.youi.paint.Paint
+import io.youi.paint.{Border, Paint, Stroke}
 import org.scalajs.dom._
 import reactify._
 
@@ -32,17 +32,22 @@ object ImportScreen extends UIScreen with PathActivation {
 
     val previewContainer = new Container with ScrollSupport {
       position.top := heading.position.bottom + 10.0
-      size.width := container.size.width
-      size.height := container.size.height - position.top
-
-      size.height.and(size.measured.height).on {
-        scribe.info(s"Container height: ${size.height()}, Measured: ${size.measured.height()}")
-      }
+      size.width := container.size.width - 5.0
+      size.height := container.size.height - position.top - 5.0
+      border := Border(Stroke(Color.Black))
     }
-    val preview = new ImageView {
+    val previewImage = new ImageView {
       position.center := container.position.center
     }
-    previewContainer.children += preview
+    val previewElements = new Container {
+      position.top := 0.0
+      position.center := previewContainer.size.center
+      size.width := previewContainer.size.width
+      size.height := previewContainer.size.height
+      background := Color.LightSalmon
+    }
+    previewContainer.children += previewImage
+    previewContainer.children += previewElements
 
     container.children ++= Seq(heading, previewContainer)
 
@@ -57,6 +62,39 @@ object ImportScreen extends UIScreen with PathActivation {
 
     val canvas = document.createElement("canvas").asInstanceOf[html.Canvas]
 
+    def process(node: PSDNode): Unit = {
+      val export = node.export()
+      lazy val text = export.text.toOption
+      if (export.visible) {
+        if (node.isGroup()) {
+          val children = node.children().toList
+          scribe.info(s"Group: [${node.name}], Children: ${children.length}")
+          processChildren(children)
+//        } else if (text.nonEmpty) {
+//          scribe.info(s"Text: [${node.name}], Text: ${text.get.value}, Font: ${text.get.font.name}")
+        } else {
+          scribe.info(s"Layer: [${node.name}], Left: ${export.left}, Top: ${export.top}")
+          if (node.name == "Vector Smart Object") {
+            scribe.info(JSON.stringify(export))
+          }
+          if (export.width > 0.0 && export.height > 0.0) {
+            Image.fromImage(node.toPng(), None, None).foreach { image =>
+              val view = new ImageView(image)
+              view.position.left := export.left
+              view.position.top := export.top
+              scribe.info(s"Loaded: ${node.name}, Size: ${image.width}x${image.height}")
+              previewElements.children += view
+              previewElements.invalidate()
+            }
+          }
+        }
+      } else {
+        scribe.info(s"Ignoring invisible: ${node.name}")
+      }
+    }
+
+    def processChildren(nodes: List[PSDNode]): Unit = nodes.reverse.foreach(process)
+
     dataTransfer.fileReceived.attach { dtf =>
       val file = dtf.file
       PSD.fromFile(file).toFuture.foreach { psd =>
@@ -64,24 +102,27 @@ object ImportScreen extends UIScreen with PathActivation {
           scribe.info(s"Processing ${file.name}...")
           val tree = psd.tree()
           Image.fromImage(psd.image.toPng(), None, None).foreach { image =>
-            preview.image := image
+//            previewImage.image := image
+//            previewElements.size.width := image.width
+            previewElements.size.height := image.height
+            scribe.info(s"Image size: ${image.width}x${image.height}")
           }
-//          val preview = psd.image.toPng()
-          // TODO: show the image
 
 //          val data = document.getElementById("data")
-//          data.innerHTML = JSON.stringify(tree.export(), space = 2)
+//          scribe.info(JSON.stringify(tree.export(), space = 2))
 
-          tree.descendants().toList.foreach { node =>
+          previewElements.children.clear()
+          processChildren(tree.children().toList)
+          /*tree.descendants().toList.foreach { node =>
             if (node.isGroup()) {
-              scribe.info(s"${node.name} (group)")
+//              scribe.info(s"${node.name} (group)")
             } else {
-              scribe.info(node.name)
+//              scribe.info(node.name)
               val export = node.export()
 //              val png = node.toPng()
               export.text.toOption match {
                 case Some(text) => {
-                  scribe.info(s"Text: ${text.value} (${text.font.name}, ${text.font.sizes}, ${text.font.colors}, ${text.font.alignment})")
+//                  scribe.info(s"Text: ${text.value} (${text.font.name}, ${text.font.sizes}, ${text.font.colors}, ${text.font.alignment})")
                 }
                 case None => {
 //                  png.addEventListener("load", (evt: Event) => {
@@ -108,7 +149,7 @@ object ImportScreen extends UIScreen with PathActivation {
 //              div.appendChild(png)
 //              images.appendChild(div)
             }
-          }
+          }*/
 
           scribe.info(s"Finished processing ${file.name}!")
         } catch {
