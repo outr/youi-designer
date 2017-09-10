@@ -23,6 +23,7 @@ object ImportScreen extends UIScreen with PathActivation {
     Text.fill := Color.Black
 
     val heading = new Text {
+      id := Some("heading")
       value := "Import Tool"
       font.size := 48.0
       fill := Color.SteelBlue
@@ -31,19 +32,20 @@ object ImportScreen extends UIScreen with PathActivation {
     }
 
     val previewContainer = new Container with ScrollSupport {
+      id := Some("previewContainer")
       position.top := heading.position.bottom + 10.0
       size.width := container.size.width - 5.0
       size.height := container.size.height - position.top - 5.0
       border := Border(Stroke(Color.Black))
     }
     val previewImage = new ImageView {
+      id := Some("previewImage")
       position.center := container.position.center
     }
     val previewElements = new Container {
+      id := Some("previewElements")
       position.top := 0.0
       position.center := previewContainer.size.center
-      size.width := previewContainer.size.width
-      size.height := previewContainer.size.height
       background := Color.LightSalmon
     }
     previewContainer.children += previewImage
@@ -74,17 +76,14 @@ object ImportScreen extends UIScreen with PathActivation {
 //          scribe.info(s"Text: [${node.name}], Text: ${text.get.value}, Font: ${text.get.font.name}")
         } else {
           scribe.info(s"Layer: [${node.name}], Left: ${export.left}, Top: ${export.top}")
-          if (node.name == "Vector Smart Object") {
-            scribe.info(JSON.stringify(export))
-          }
           if (export.width > 0.0 && export.height > 0.0) {
+            val view = new ImageView
+            view.id := Some(export.name)
+            previewElements.children += view
             Image.fromImage(node.toPng(), None, None).foreach { image =>
-              val view = new ImageView(image)
+              view.image := image
               view.position.left := export.left
               view.position.top := export.top
-              scribe.info(s"Loaded: ${node.name}, Size: ${image.width}x${image.height}")
-              previewElements.children += view
-              previewElements.invalidate()
             }
           }
         }
@@ -103,15 +102,14 @@ object ImportScreen extends UIScreen with PathActivation {
           val tree = psd.tree()
           Image.fromImage(psd.image.toPng(), None, None).foreach { image =>
 //            previewImage.image := image
-//            previewElements.size.width := image.width
+            previewElements.size.width := image.width
             previewElements.size.height := image.height
-            scribe.info(s"Image size: ${image.width}x${image.height}")
           }
 
 //          val data = document.getElementById("data")
 //          scribe.info(JSON.stringify(tree.export(), space = 2))
 
-          previewElements.children.clear()
+          previewElements.children := Vector.empty
           processChildren(tree.children().toList)
           /*tree.descendants().toList.foreach { node =>
             if (node.isGroup()) {
