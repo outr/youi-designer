@@ -13,9 +13,15 @@ import reactify._
 
 import scala.scalajs.js.JSON
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.scalajs.js
 
 object ImportScreen extends UIScreen with PathActivation {
   private lazy val dataTransfer = new DataTransferManager
+
+  private lazy val fontMapping = Map(
+    "OpenSans" -> GoogleFont.`Open Sans`.regular,
+    "OpenSans-Bold" -> GoogleFont.`Open Sans`.`700`
+  )
 
   override def createUI(): Unit = {
     Text.font.file := Font.fromURL(GoogleFont.`Open Sans`.regular)
@@ -66,16 +72,41 @@ object ImportScreen extends UIScreen with PathActivation {
 
     def process(node: PSDNode): Unit = {
       val export = node.export()
-      lazy val text = export.text.toOption
+      lazy val textOption = export.text.toOption
       if (export.visible) {
         if (node.isGroup()) {
           val children = node.children().toList
-          scribe.info(s"Group: [${node.name}], Children: ${children.length}")
+          scribe.debug(s"Group: [${node.name}], Children: ${children.length}")
           processChildren(children)
-//        } else if (text.nonEmpty) {
-//          scribe.info(s"Text: [${node.name}], Text: ${text.get.value}, Font: ${text.get.font.name}")
+        } else if (textOption.nonEmpty) {
+          val text = textOption.get
+          val fontName = text.font.name.filterNot(c => c == 0 || c == 65279)
+          val font = fontMapping.getOrElse(fontName, throw new RuntimeException(s"Unmapped font: [$fontName]"))
+          val fontSize = text.font.sizes(0)
+          val colors = text.font.colors(0)
+          val fontColor = Color.fromRGBA(colors(0).toInt, colors(1).toInt, colors(2).toInt, (colors(3) / 255.0) * export.opacity)
+          val t = new Text
+          t.value := text.value
+          t.font.file := Font.fromURL(font)
+          t.font.size := fontSize
+          t.fill := fontColor
+          text.font.alignment.head match {
+            case "center" => {
+              t.position.center := export.left + (export.width / 2.0)
+            }
+            case "right" => {
+              t.position.right := export.right
+            }
+            case _ => {
+              t.position.left := export.left
+            }
+          }
+          t.position.top := export.top
+          previewElements.children += t
+          scribe.info(s"Text: [${node.name}], Text: ${text.value}, Opacity: ${export.opacity}, Export: ${JSON.stringify(export)}")
+          scribe.info(s"Test: ${JSON.stringify(node.asInstanceOf[js.Dynamic].get("typeTool").engineData)}")
         } else {
-          scribe.info(s"Layer: [${node.name}], Left: ${export.left}, Top: ${export.top}")
+          scribe.debug(s"Layer: [${node.name}], Left: ${export.left}, Top: ${export.top}")
           if (export.width > 0.0 && export.height > 0.0) {
             val view = new ImageView
             view.id := Some(export.name)
@@ -87,8 +118,6 @@ object ImportScreen extends UIScreen with PathActivation {
             }
           }
         }
-      } else {
-        scribe.info(s"Ignoring invisible: ${node.name}")
       }
     }
 
