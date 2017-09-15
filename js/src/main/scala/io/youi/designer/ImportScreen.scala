@@ -9,19 +9,22 @@ import io.youi.font.{Font, GoogleFont}
 import io.youi.image.Image
 import io.youi.paint.{Border, Paint, Stroke}
 import org.scalajs.dom._
+import profig.JsonUtil
 import reactify._
 
-import scala.scalajs.js.JSON
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.scalajs.js
 
 object ImportScreen extends UIScreen with PathActivation {
   private lazy val dataTransfer = new DataTransferManager
 
   private lazy val fontMapping = Map(
     "OpenSans" -> GoogleFont.`Open Sans`.regular,
-    "OpenSans-Bold" -> GoogleFont.`Open Sans`.`700`
+    "OpenSans-Semibold" -> GoogleFont.`Open Sans`.`600`,
+    "OpenSans-Bold" -> GoogleFont.`Open Sans`.`700`,
+    "OpenSans-Extrabold" -> GoogleFont.`Open Sans`.`800`
   )
+
+  def communication: DesignerCommunication = ClientDesignerApplication.communication(ClientDesignerApplication.clientConnectivity(ClientDesignerApplication.connectivity).connection)
 
   override def createUI(): Unit = {
     Text.font.file := Font.fromURL(GoogleFont.`Open Sans`.regular)
@@ -52,7 +55,6 @@ object ImportScreen extends UIScreen with PathActivation {
       id := Some("previewElements")
       position.top := 0.0
       position.center := previewContainer.size.center
-      background := Color.LightSalmon
     }
     previewContainer.children += previewImage
     previewContainer.children += previewElements
@@ -68,16 +70,34 @@ object ImportScreen extends UIScreen with PathActivation {
       case false => container.background := Paint.none
     }
 
-    val canvas = document.createElement("canvas").asInstanceOf[html.Canvas]
+    var psdFileName: String = ""
+    var fileNames: Set[String] = Set.empty
 
-    def process(node: PSDNode): Unit = {
+    def generateFileName(name: String, increment: Int = 0): String = if (increment == 0) {
+      generateFileName(name.replace(' ', '_').toLowerCase, increment + 1)
+    } else {
+      val fileName = if (increment > 1) {
+        s"$name ($increment)"
+      } else {
+        name
+      }
+      if (!fileNames.contains(fileName)) {
+        fileNames += fileName
+        s"$fileName.png"
+      } else {
+        generateFileName(name, increment + 1)
+      }
+    }
+
+    def process(node: PSDNode): Option[model.Entry] = {
       val export = node.export()
       lazy val textOption = export.text.toOption
       if (export.visible) {
         if (node.isGroup()) {
           val children = node.children().toList
           scribe.debug(s"Group: [${node.name}], Children: ${children.length}")
-          processChildren(children)
+          val entries = processChildren(children)
+          Some(model.Group(export.name, entries))
         } else if (textOption.nonEmpty) {
           val text = textOption.get
           val fontName = text.font.name.filterNot(c => c == 0 || c == 65279)
@@ -90,95 +110,73 @@ object ImportScreen extends UIScreen with PathActivation {
           t.font.file := Font.fromURL(font)
           t.font.size := fontSize
           t.fill := fontColor
-          text.font.alignment.head match {
+          val alignment = text.font.alignment.head match {
             case "center" => {
               t.position.center := export.left + (export.width / 2.0)
+              Horizontal.Center
             }
             case "right" => {
               t.position.right := export.right
+              Horizontal.Right
             }
             case _ => {
               t.position.left := export.left
+              Horizontal.Left
             }
           }
           t.position.top := export.top
           previewElements.children += t
-          scribe.info(s"Text: [${node.name}], Text: ${text.value}, Opacity: ${export.opacity}, Export: ${JSON.stringify(export)}")
-          scribe.info(s"Test: ${JSON.stringify(node.asInstanceOf[js.Dynamic].get("typeTool").engineData)}")
+          Some(model.Text(export.name, text.value, fontName, fontSize, fontColor.value, alignment, export.left, export.top, export.width, export.height, export.opacity))
         } else {
-          scribe.debug(s"Layer: [${node.name}], Left: ${export.left}, Top: ${export.top}")
           if (export.width > 0.0 && export.height > 0.0) {
             val view = new ImageView
             view.id := Some(export.name)
             previewElements.children += view
-            Image.fromImage(node.toPng(), None, None).foreach { image =>
+
+            val png = node.toPng()
+            val img = model.Image(export.name, generateFileName(export.name), export.left, export.top, export.width, export.height, export.opacity)
+            Image.fromImage(png, None, None).foreach { image =>
+              image.toDataURL.foreach { dataURL =>
+                communication.saveImage(psdFileName, img.fileName, dataURL)
+              }
               view.image := image
               view.position.left := export.left
               view.position.top := export.top
             }
+            Some(img)
+          } else {
+            None
           }
         }
+      } else {
+        None
       }
     }
 
-    def processChildren(nodes: List[PSDNode]): Unit = nodes.reverse.foreach(process)
+    def processChildren(nodes: List[PSDNode]): List[model.Entry] = nodes.reverse.flatMap(process)
 
     dataTransfer.fileReceived.attach { dtf =>
       val file = dtf.file
       PSD.fromFile(file).toFuture.foreach { psd =>
         try {
-          scribe.info(s"Processing ${file.name}...")
+          psdFileName = file.name
+          scribe.info(s"Processing $psdFileName...")
           val tree = psd.tree()
           Image.fromImage(psd.image.toPng(), None, None).foreach { image =>
-//            previewImage.image := image
             previewElements.size.width := image.width
             previewElements.size.height := image.height
-          }
-
-//          val data = document.getElementById("data")
-//          scribe.info(JSON.stringify(tree.export(), space = 2))
-
-          previewElements.children := Vector.empty
-          processChildren(tree.children().toList)
-          /*tree.descendants().toList.foreach { node =>
-            if (node.isGroup()) {
-//              scribe.info(s"${node.name} (group)")
-            } else {
-//              scribe.info(node.name)
-              val export = node.export()
-//              val png = node.toPng()
-              export.text.toOption match {
-                case Some(text) => {
-//                  scribe.info(s"Text: ${text.value} (${text.font.name}, ${text.font.sizes}, ${text.font.colors}, ${text.font.alignment})")
-                }
-                case None => {
-//                  png.addEventListener("load", (evt: Event) => {
-//                    canvas.width = png.width
-//                    canvas.height = png.height
-//                    val ctx = canvas.getContext("2d").asInstanceOf[CanvasRenderingContext2D]
-//                    ctx.drawImage(png, 0, 0, png.width, png.height)
-//                    val imageData = ctx.getImageData(0, 0, png.width, png.height)
-//
-//                    val colors = imageData.data.toIterable.grouped(4).map { i =>
-//                      val v = i.toVector
-//                      Pixel(v(0), v(1), v(2), v(3))
-//                    }.toSet
-//
-//                    val text = if (colors.size < 10) {
-//                      s"${colors.mkString(", ")} (${colors.size})"
-//                    } else {
-//                      colors.size.toString
-//                    }
-//                    scribe.info(s"Colors: $text")
-//                  })
-                }
-              }
-//              div.appendChild(png)
-//              images.appendChild(div)
+            image.toDataURL.foreach { dataURL =>
+              communication.saveImage(psdFileName, "preview.png", dataURL)
             }
-          }*/
+          }
+          previewElements.children := Vector.empty
+          fileNames = Set.empty
+          val entries = processChildren(tree.children().toList)
+          val root = model.Group("root", entries)
+          scribe.info(JsonUtil.toJsonString(root))
+          communication.saveImport(psdFileName, root)
 
-          scribe.info(s"Finished processing ${file.name}!")
+          scribe.info(s"Finished processing $psdFileName!")
         } catch {
           case t: Throwable => t.printStackTrace()
         }
