@@ -1,14 +1,14 @@
 name in ThisBuild := "youi-designer"
 organization in ThisBuild := "io.youi"
 version in ThisBuild := "1.0.0"
-scalaVersion in ThisBuild := "2.12.3"
+scalaVersion in ThisBuild := "2.12.4"
 resolvers in ThisBuild += Resolver.sonatypeRepo("releases")
 
 val psdVersion = "3.2.0.1"
 
 lazy val designer = crossApplication.in(file("."))
   .settings(
-    youiVersion := "0.7.1-SNAPSHOT"
+    youiVersion := "0.9.0-SNAPSHOT"
   )
   .jsSettings(
     libraryDependencies ++= Seq(

@@ -3,16 +3,18 @@ package io.youi.designer
 import com.outr.psd.{PSD, PSDNode}
 import io.youi._
 import io.youi.app.screen.{PathActivation, UIScreen}
-import io.youi.component.{Container, ImageView, ScrollSupport, Text}
+import io.youi.component.mixins.ScrollSupport
+import io.youi.component.{Container, ImageView, TextView}
 import io.youi.datatransfer.DataTransferManager
-import io.youi.font.{Font, GoogleFont}
-import io.youi.image.Image
+import io.youi.font.{Font, GoogleFont, OpenTypeFont}
+import io.youi.image.{HTMLImage, Image}
 import io.youi.paint.{Border, Paint, Stroke}
 import org.scalajs.dom._
 import profig.JsonUtil
 import reactify._
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 object ImportScreen extends UIScreen with PathActivation {
   private lazy val dataTransfer = new DataTransferManager
@@ -26,13 +28,13 @@ object ImportScreen extends UIScreen with PathActivation {
 
   def communication: DesignerCommunication = ClientDesignerApplication.communication(ClientDesignerApplication.clientConnectivity(ClientDesignerApplication.connectivity).connection)
 
-  override def createUI(): Unit = {
-    Text.font.file := Font.fromURL(GoogleFont.`Open Sans`.regular)
-    Text.font.size := 24.0
-    Text.fill := Color.Black
+  override def createUI(): Future[Unit] = OpenTypeFont.fromURL(GoogleFont.`Open Sans`.regular).map { font =>
+    TextView.font.file := font
+    TextView.font.size := 24.0
+    TextView.fill := Color.Black
 
-    val heading = new Text {
-      id := Some("heading")
+    val heading = new TextView {
+      id := "heading"
       value := "Import Tool"
       font.size := 48.0
       fill := Color.SteelBlue
@@ -41,18 +43,18 @@ object ImportScreen extends UIScreen with PathActivation {
     }
 
     val previewContainer = new Container with ScrollSupport {
-      id := Some("previewContainer")
+      id := "previewContainer"
       position.top := heading.position.bottom + 10.0
       size.width := container.size.width - 5.0
       size.height := container.size.height - position.top - 5.0
       border := Border(Stroke(Color.Black))
     }
     val previewImage = new ImageView {
-      id := Some("previewImage")
+      id := "previewImage"
       position.center := container.position.center
     }
     val previewElements = new Container {
-      id := Some("previewElements")
+      id := "previewElements"
       position.top := 0.0
       position.center := previewContainer.size.center
     }
@@ -63,7 +65,7 @@ object ImportScreen extends UIScreen with PathActivation {
 
     dataTransfer.addDragTarget(document.body)
     dataTransfer.overlay.visible.attach {
-      case true => container.background := Paint.vertical(container).distributeColors(
+      case true => container.background := Paint.vertical(container.size.height).distributeColors(
         Color.AliceBlue,
         Color.LightBlue
       )
@@ -105,9 +107,9 @@ object ImportScreen extends UIScreen with PathActivation {
           val fontSize = text.font.sizes(0)
           val colors = text.font.colors(0)
           val fontColor = Color.fromRGBA(colors(0).toInt, colors(1).toInt, colors(2).toInt, (colors(3) / 255.0) * export.opacity)
-          val t = new Text
+          val t = new TextView
           t.value := text.value
-          t.font.file := Font.fromURL(font)
+          OpenTypeFont.fromURL(font).foreach(t.font.file := _)
           t.font.size := fontSize
           t.fill := fontColor
           val alignment = text.font.alignment.head match {
@@ -130,12 +132,12 @@ object ImportScreen extends UIScreen with PathActivation {
         } else {
           if (export.width > 0.0 && export.height > 0.0) {
             val view = new ImageView
-            view.id := Some(export.name)
+            view.id := export.name
             previewElements.children += view
 
             val png = node.toPng()
             val img = model.Image(export.name, generateFileName(export.name), export.left, export.top, export.width, export.height, export.opacity)
-            Image.fromImage(png, None, None).foreach { image =>
+            HTMLImage(png).foreach { image =>
               image.toDataURL.foreach { dataURL =>
                 communication.saveImage(psdFileName, img.fileName, dataURL)
               }
@@ -162,7 +164,7 @@ object ImportScreen extends UIScreen with PathActivation {
           psdFileName = file.name
           scribe.info(s"Processing $psdFileName...")
           val tree = psd.tree()
-          Image.fromImage(psd.image.toPng(), None, None).foreach { image =>
+          HTMLImage(psd.image.toPng()).foreach { image =>
             previewElements.size.width := image.width
             previewElements.size.height := image.height
             image.toDataURL.foreach { dataURL =>
