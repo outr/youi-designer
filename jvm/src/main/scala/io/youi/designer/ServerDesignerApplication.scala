@@ -12,9 +12,12 @@ object ServerDesignerApplication extends ServerApplication with DesignerApplicat
   handler.matcher(
     combined.any(
       path.exact("/"),
-      path.exact("/import")
+      path.exact("/import"),
+      path.exact("/merge")
     )
   ).page()
+
+  handler.file(outputDirectory)
 
   override def main(args: Array[String]): Unit = start(args)
 }

@@ -19,13 +19,6 @@ import scala.concurrent.Future
 object ImportScreen extends UIScreen with PathActivation {
   private lazy val dataTransfer = new DataTransferManager
 
-  private lazy val fontMapping = Map(
-    "OpenSans" -> GoogleFont.`Open Sans`.regular,
-    "OpenSans-Semibold" -> GoogleFont.`Open Sans`.`600`,
-    "OpenSans-Bold" -> GoogleFont.`Open Sans`.`700`,
-    "OpenSans-Extrabold" -> GoogleFont.`Open Sans`.`800`
-  )
-
   def communication: DesignerCommunication = ClientDesignerApplication.communication(ClientDesignerApplication.clientConnectivity(ClientDesignerApplication.connectivity).connection)
 
   override def createUI(): Future[Unit] = OpenTypeFont.fromURL(GoogleFont.`Open Sans`.regular).map { font =>
@@ -103,13 +96,12 @@ object ImportScreen extends UIScreen with PathActivation {
         } else if (textOption.nonEmpty) {
           val text = textOption.get
           val fontName = text.font.name.filterNot(c => c == 0 || c == 65279)
-          val font = fontMapping.getOrElse(fontName, throw new RuntimeException(s"Unmapped font: [$fontName]"))
           val fontSize = text.font.sizes(0)
           val colors = text.font.colors(0)
           val fontColor = Color.fromRGBA(colors(0).toInt, colors(1).toInt, colors(2).toInt, (colors(3) / 255.0) * export.opacity)
           val t = new TextView
           t.value := text.value
-          OpenTypeFont.fromURL(font).foreach(t.font.file := _)
+          FontMap(fontName).foreach(t.font.file := _)
           t.font.size := fontSize
           t.fill := fontColor
           val alignment = text.font.alignment.head match {
@@ -126,7 +118,7 @@ object ImportScreen extends UIScreen with PathActivation {
               Horizontal.Left
             }
           }
-          t.position.top := export.top
+          t.position.middle := export.top + (export.height / 2.0)
           previewElements.children += t
           Some(model.Text(export.name, text.value, fontName, fontSize, fontColor.value, alignment, export.left, export.top, export.width, export.height, export.opacity))
         } else {

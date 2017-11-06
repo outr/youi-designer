@@ -8,7 +8,7 @@ val psdVersion = "3.2.0.1"
 
 lazy val designer = crossApplication.in(file("."))
   .settings(
-    youiVersion := "0.9.0-SNAPSHOT"
+    youiVersion := "0.8.1-SNAPSHOT"
   )
   .jsSettings(
     libraryDependencies ++= Seq(

@@ -7,7 +7,9 @@ import scala.scalajs.js.annotation.JSExportTopLevel
 
 object ClientDesignerApplication extends ClientApplication with DesignerApplication {
   lazy val debug: DebugSupport = new DebugSupport
+
   val importScreen: ImportScreen.type = ImportScreen
+  val mergeScreen: MergeScreen.type = MergeScreen
 
   @JSExportTopLevel("application")
   def main(): Unit = {

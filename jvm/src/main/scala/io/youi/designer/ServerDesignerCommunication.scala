@@ -29,4 +29,10 @@ trait ServerDesignerCommunication extends DesignerCommunication {
     val jsonString = json.pretty(Printer.spaces2)
     IO.stream(jsonString, file)
   }
+
+  override def listConversions(): Future[List[String]] = Future.successful {
+    ServerDesignerApplication.outputDirectory.listFiles().collect {
+      case f if f.isDirectory => f.getName
+    }.toList
+  }
 }
