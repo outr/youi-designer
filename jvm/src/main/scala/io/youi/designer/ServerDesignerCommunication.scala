@@ -33,6 +33,6 @@ trait ServerDesignerCommunication extends DesignerCommunication {
   override def listConversions(): Future[List[String]] = Future.successful {
     ServerDesignerApplication.outputDirectory.listFiles().collect {
       case f if f.isDirectory => f.getName
-    }.toList
+    }.toList.sorted
   }
 }

@@ -3,10 +3,12 @@ package io.youi.designer
 import io.youi.{Color, ui}
 import io.youi.app.screen.{PathActivation, UIScreen}
 import io.youi.component.mixins.ScrollSupport
-import io.youi.component.{Container, TextView}
-import io.youi.font.{Font, GoogleFont, OpenTypeFont}
-import io.youi.layout.{FlowLayout, Margins}
+import io.youi.component.{Container, ImageView, TextView}
+import io.youi.font.{GoogleFont, OpenTypeFont}
+import io.youi.image.Image
+import io.youi.layout.{FlowLayout, Margins, VerticalLayout}
 import io.youi.paint.{Border, Stroke}
+import io.youi.util.SizeUtility
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -43,6 +45,16 @@ class ConversionPreview(directory: String) extends Container {
     fill := Color.SteelBlue
   }
 
+  private val preview = new ImageView {
+    Image(s"/$directory/preview.png").map { img =>
+      val scaled = SizeUtility.scale(img.width, img.height, 200.0, 900.0)
+      img.resize(scaled.width, scaled.height).foreach { resized =>
+        image := resized
+      }
+    }
+  }
+
+  layout := new VerticalLayout(10.0)
   border := Border(Stroke(Color.Black))
   padding.left := 5.0
   padding.right := 5.0
@@ -50,4 +62,5 @@ class ConversionPreview(directory: String) extends Container {
   padding.bottom := 5.0
 
   children += heading
+  children += preview
 }
