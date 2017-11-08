@@ -68,21 +68,27 @@ object ImportScreen extends UIScreen with PathActivation {
     var psdFileName: String = ""
     var fileNames: Set[String] = Set.empty
 
-    def generateFileName(name: String, increment: Int = 0): String = if (increment == 0) {
-      generateFileName(name.replace(' ', '_').toLowerCase, increment + 1)
-    } else {
-      val fileName = if (increment > 1) {
-        s"$name ($increment)"
-      } else {
-        name
-      }
-      if (!fileNames.contains(fileName)) {
-        fileNames += fileName
-        s"$fileName.png"
-      } else {
-        generateFileName(name, increment + 1)
-      }
-    }
+//    def generateFileName(fileName: FileName): FileName = if (!fileNames.contains(fileName.toString)) {
+//      fileName
+//    } else {
+//      generateFileName(fileName.copy(increment = fileName.increment + 1))
+//    }
+
+//    def generateFileName(name: String, increment: Int = 0): String = if (increment == 0) {
+//      generateFileName(name.replace(' ', '_').toLowerCase, increment + 1)
+//    } else {
+//      val fileName = if (increment > 1) {
+//        s"$name ($increment)"
+//      } else {
+//        name
+//      }
+//      if (!fileNames.contains(fileName)) {
+//        fileNames += fileName
+//        s"$fileName.png"
+//      } else {
+//        generateFileName(name, increment + 1)
+//      }
+//    }
 
     def process(node: PSDNode): Option[model.Entry] = {
       val export = node.export()
@@ -128,7 +134,12 @@ object ImportScreen extends UIScreen with PathActivation {
             previewElements.children += view
 
             val png = node.toPng()
-            val img = model.Image(export.name, generateFileName(export.name), export.left, export.top, export.width, export.height, export.opacity)
+            val fileName = FileName(s"${export.name}.png").deduplicate { fn =>
+              val b = fileNames.contains(fn)
+              if (!b) fileNames += fn
+              b
+            }.toString
+            val img = model.Image(export.name, fileName, export.left, export.top, export.width, export.height, export.opacity)
             HTMLImage(png).foreach { image =>
               image.toDataURL.foreach { dataURL =>
                 communication.saveImage(psdFileName, img.fileName, dataURL)
@@ -167,7 +178,6 @@ object ImportScreen extends UIScreen with PathActivation {
           fileNames = Set.empty
           val entries = processChildren(tree.children().toList)
           val root = model.Group("root", entries)
-          scribe.info(JsonUtil.toJsonString(root))
           communication.saveImport(psdFileName, root)
 
           scribe.info(s"Finished processing $psdFileName!")

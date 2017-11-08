@@ -39,7 +39,8 @@ class MergeTool(directories: List[File]) {
 
     val json = JsonUtil.toJson(entry)
     val jsonString = json.pretty(Printer.spaces2)
-    IO.stream(jsonString, new File(working, s"${directory.getName}.json"))
+    val jsonFileName = FileName(s"${directory.getName}.json")
+    IO.stream(jsonString, new File(working, jsonFileName.toString))
   }
 
   private def processEntry(directory: File, entry: Entry): Unit = entry match {
@@ -49,7 +50,11 @@ class MergeTool(directories: List[File]) {
       hashMap.get(sha1) match {
         case Some(existing) => i.fileName = existing.getName
         case None => {
-          val asset = new File(assets, i.fileName)
+          val fileName = FileName(i.fileName).deduplicate { fn =>
+            new File(assets, fn).exists()
+          }
+          i.fileName = fileName.toString
+          val asset = new File(assets, fileName.toString)
           if (asset.exists()) scribe.warn(s"Asset already exists! ${i.fileName}")
           IO.stream(file, asset)
           hashMap += sha1 -> file
