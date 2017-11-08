@@ -11,4 +11,6 @@ trait DesignerCommunication extends Communication {
   @server def saveImport(psdFileName: String, layer: Group): Future[Unit]
 
   @server def listConversions(): Future[List[String]]
+
+  @server def mergeConversions(directories: List[String]): Future[Unit]
 }

@@ -35,4 +35,8 @@ trait ServerDesignerCommunication extends DesignerCommunication {
       case f if f.isDirectory => f.getName
     }.toList.sorted
   }
+
+  override def mergeConversions(directories: List[String]): Future[Unit] = {
+    // TODO: implement
+  }
 }

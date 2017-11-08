@@ -3,7 +3,7 @@ package io.youi.designer
 import io.youi.{Color, ui}
 import io.youi.app.screen.{PathActivation, UIScreen}
 import io.youi.component.mixins.ScrollSupport
-import io.youi.component.{Container, ImageView, TextView, TypedContainer}
+import io.youi.component._
 import io.youi.font.{GoogleFont, OpenTypeFont}
 import io.youi.image.Image
 import io.youi.layout.{FlowLayout, Margins, VerticalLayout}
@@ -17,7 +17,13 @@ import scala.concurrent.ExecutionContext.Implicits.global
 object MergeScreen extends UIScreen with PathActivation {
   def communication: DesignerCommunication = ClientDesignerApplication.communication(ClientDesignerApplication.clientConnectivity(ClientDesignerApplication.connectivity).connection)
 
+  private lazy val mergeButton = new Button("Merge Selected") {
+    position.left := 25.0
+    position.top := 10.0
+  }
+
   private lazy val previews = new TypedContainer[ConversionPreview] with ScrollSupport {
+    position.top := 100.0
     size.width := ui.width
     size.height := ui.height
     layout := new FlowLayout(Margins(5.0, 5.0, 5.0, 5.0))
@@ -34,13 +40,22 @@ object MergeScreen extends UIScreen with PathActivation {
       val preview = new ConversionPreview(directory)
       previews.children += preview
     }
+
+    mergeButton.event.click.on(merge())
+
+    container.children += mergeButton
     container.children += previews
   }
 
   override def path: String = "/merge"
+
+  def merge(): Unit = {
+    val directories = previews.children().map(_.directory).toList
+    communication.mergeConversions(directories)
+  }
 }
 
-class ConversionPreview(directory: String) extends Container {
+class ConversionPreview(val directory: String) extends Container {
   val selected: Var[Boolean] = Var(true)
 
   private val heading = new TextView {
@@ -59,10 +74,7 @@ class ConversionPreview(directory: String) extends Container {
 
   layout := new VerticalLayout(10.0)
   border := Border(Stroke(Color.Black))
-  padding.left := 5.0
-  padding.right := 5.0
-  padding.top := 5.0
-  padding.bottom := 5.0
+  padding := 5.0
 
   background := {
     if (event.pointer.overState()) {
@@ -83,4 +95,35 @@ class ConversionPreview(directory: String) extends Container {
 
   children += heading
   children += preview
+}
+
+class Button extends Container {
+  def this(value: String) = {
+    this()
+    text.value := value
+  }
+
+  val text: TextView = new TextView
+
+  padding := 15.0
+  border := Border(Stroke(Color.Black), 5.0)
+  background := {
+    if (event.pointer.downState()) {
+      Paint.vertical(size.height).distributeColors(
+        Color.LightBlue,
+        Color.AliceBlue
+      )
+    } else if (event.pointer.overState()) {
+      Paint.vertical(size.height).distributeColors(
+        Color.AliceBlue,
+        Color.LightBlue
+      )
+    } else {
+      Paint.vertical(size.height).distributeColors(
+        Color.White,
+        Color.LightGray
+      )
+    }
+  }
+  children += text
 }
