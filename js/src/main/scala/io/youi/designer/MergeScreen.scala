@@ -3,12 +3,13 @@ package io.youi.designer
 import io.youi.{Color, ui}
 import io.youi.app.screen.{PathActivation, UIScreen}
 import io.youi.component.mixins.ScrollSupport
-import io.youi.component.{Container, ImageView, TextView}
+import io.youi.component.{Container, ImageView, TextView, TypedContainer}
 import io.youi.font.{GoogleFont, OpenTypeFont}
 import io.youi.image.Image
 import io.youi.layout.{FlowLayout, Margins, VerticalLayout}
-import io.youi.paint.{Border, Stroke}
+import io.youi.paint.{Border, Paint, Stroke}
 import io.youi.util.SizeUtility
+import reactify._
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -16,7 +17,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 object MergeScreen extends UIScreen with PathActivation {
   def communication: DesignerCommunication = ClientDesignerApplication.communication(ClientDesignerApplication.clientConnectivity(ClientDesignerApplication.connectivity).connection)
 
-  private lazy val previews = new Container with ScrollSupport {
+  private lazy val previews = new TypedContainer[ConversionPreview] with ScrollSupport {
     size.width := ui.width
     size.height := ui.height
     layout := new FlowLayout(Margins(5.0, 5.0, 5.0, 5.0))
@@ -40,6 +41,8 @@ object MergeScreen extends UIScreen with PathActivation {
 }
 
 class ConversionPreview(directory: String) extends Container {
+  val selected: Var[Boolean] = Var(true)
+
   private val heading = new TextView {
     value := directory
     fill := Color.SteelBlue
@@ -60,6 +63,23 @@ class ConversionPreview(directory: String) extends Container {
   padding.right := 5.0
   padding.top := 5.0
   padding.bottom := 5.0
+
+  background := {
+    if (event.pointer.overState()) {
+      Paint.vertical(size.height).distributeColors(
+        Color.AliceBlue,
+        Color.LightBlue
+      )
+    } else if (selected()) {
+      Color.LightBlue
+    } else {
+      Paint.none
+    }
+  }
+
+  event.click.on {
+    selected.static(!selected)
+  }
 
   children += heading
   children += preview
