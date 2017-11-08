@@ -32,11 +32,13 @@ trait ServerDesignerCommunication extends DesignerCommunication {
 
   override def listConversions(): Future[List[String]] = Future.successful {
     ServerDesignerApplication.outputDirectory.listFiles().collect {
-      case f if f.isDirectory => f.getName
+      case f if f.isDirectory && f.getName != "working" => f.getName
     }.toList.sorted
   }
 
-  override def mergeConversions(directories: List[String]): Future[Unit] = {
-    // TODO: implement
+  override def mergeConversions(directories: List[String]): Future[Unit] = Future {
+    scribe.info(s"Merging: $directories")
+    val tool = new MergeTool(directories.map(new File(ServerDesignerApplication.outputDirectory, _)))
+    tool.merge()
   }
 }

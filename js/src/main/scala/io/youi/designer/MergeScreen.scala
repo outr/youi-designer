@@ -50,7 +50,9 @@ object MergeScreen extends UIScreen with PathActivation {
   override def path: String = "/merge"
 
   def merge(): Unit = {
-    val directories = previews.children().map(_.directory).toList
+    val directories = previews.children().collect {
+      case preview if preview.selected() => preview.directory
+    }.toList
     communication.mergeConversions(directories)
   }
 }
