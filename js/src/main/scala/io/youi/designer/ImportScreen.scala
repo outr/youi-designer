@@ -16,10 +16,8 @@ import reactify._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-object ImportScreen extends UIScreen with PathActivation {
+object ImportScreen extends DesignerScreen {
   private lazy val dataTransfer = new DataTransferManager
-
-  def communication: DesignerCommunication = ClientDesignerApplication.communication(ClientDesignerApplication.clientConnectivity(ClientDesignerApplication.connectivity).connection)
 
   override def createUI(): Future[Unit] = OpenTypeFont.fromURL(GoogleFont.`Open Sans`.regular).map { font =>
     TextView.font.file := font
@@ -67,28 +65,6 @@ object ImportScreen extends UIScreen with PathActivation {
 
     var psdFileName: String = ""
     var fileNames: Set[String] = Set.empty
-
-//    def generateFileName(fileName: FileName): FileName = if (!fileNames.contains(fileName.toString)) {
-//      fileName
-//    } else {
-//      generateFileName(fileName.copy(increment = fileName.increment + 1))
-//    }
-
-//    def generateFileName(name: String, increment: Int = 0): String = if (increment == 0) {
-//      generateFileName(name.replace(' ', '_').toLowerCase, increment + 1)
-//    } else {
-//      val fileName = if (increment > 1) {
-//        s"$name ($increment)"
-//      } else {
-//        name
-//      }
-//      if (!fileNames.contains(fileName)) {
-//        fileNames += fileName
-//        s"$fileName.png"
-//      } else {
-//        generateFileName(name, increment + 1)
-//      }
-//    }
 
     def process(node: PSDNode): Option[model.Entry] = {
       val export = node.export()
@@ -187,6 +163,4 @@ object ImportScreen extends UIScreen with PathActivation {
       }
     }
   }
-
-  override def path: String = "/import"
 }

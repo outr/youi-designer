@@ -14,9 +14,7 @@ import reactify._
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
-object MergeScreen extends UIScreen with PathActivation {
-  def communication: DesignerCommunication = ClientDesignerApplication.communication(ClientDesignerApplication.clientConnectivity(ClientDesignerApplication.connectivity).connection)
-
+object MergeScreen extends DesignerScreen {
   private lazy val mergeButton = new Button("Merge Selected") {
     position.left := 25.0
     position.top := 10.0
@@ -46,8 +44,6 @@ object MergeScreen extends UIScreen with PathActivation {
     container.children += mergeButton
     container.children += previews
   }
-
-  override def path: String = "/merge"
 
   def merge(): Unit = {
     val directories = previews.children().collect {
