@@ -31,7 +31,7 @@ class MergeTool(directories: List[File]) {
 
   private def mergeDirectory(directory: File): Unit = {
     val screen = new File(directory, "screen.json")
-    val entry = JsonUtil.fromJsonString[Group](IO.stream(screen, new StringBuilder).toString)
+    val entry = JsonUtil.fromJsonString[Root](IO.stream(screen, new StringBuilder).toString)
     processEntry(directory, entry)
 
     val json = JsonUtil.toJson(entry)
@@ -60,5 +60,6 @@ class MergeTool(directories: List[File]) {
     }
     case _: Text => // Ignore
     case g: Group => g.children.foreach(processEntry(directory, _))
+    case r: Root => r.children.foreach(processEntry(directory, _))
   }
 }

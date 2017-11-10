@@ -3,7 +3,7 @@ package io.youi.designer
 import java.io.File
 
 import io.circe.Printer
-import io.youi.designer.model.Group
+import io.youi.designer.model.{Group, Root}
 import org.matthicks.media4s.image.ImageUtil
 import org.powerscala.io._
 import profig.JsonUtil
@@ -20,7 +20,7 @@ trait ServerDesignerCommunication extends DesignerCommunication {
     ImageUtil.saveBase64(dataURL, file)
   }
 
-  override def saveImport(psdFileName: String, layer: Group): Future[Unit] = Future {
+  override def saveImport(psdFileName: String, layer: Root): Future[Unit] = Future {
     val outputPath = psdFileName.substring(0, psdFileName.indexOf('.'))
     val directory = new File(ServerDesignerApplication.outputDirectory, outputPath)
     directory.mkdirs()
@@ -42,11 +42,11 @@ trait ServerDesignerCommunication extends DesignerCommunication {
     tool.merge()
   }
 
-  override def loadScreen(screenName: String): Future[Option[Group]] = Future {
+  override def loadScreen(screenName: String): Future[Option[Root]] = Future {
     val jsonFile = new File(ServerDesignerApplication.working, s"$screenName.json")
     if (jsonFile.isFile) {
       val jsonString = IO.stream(jsonFile, new StringBuilder).toString
-      Option(JsonUtil.fromJsonString[Group](jsonString))
+      Option(JsonUtil.fromJsonString[Root](jsonString))
     } else {
       None
     }

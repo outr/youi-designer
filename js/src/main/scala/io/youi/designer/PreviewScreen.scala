@@ -1,17 +1,19 @@
 package io.youi.designer
 
-import io.youi.{Color, History, Horizontal}
+import io.youi._
 import io.youi.component.{Container, ImageView, TextView}
 import io.youi.designer.model._
+import io.youi.image.HTMLImage
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
-object PreviewScreen extends DesignerScreen {
+object PreviewScreen extends DesignerScreen with VirtualSizeSupport {
   override def createUI(): Future[Unit] = FontMap().map { fontMap =>
     TextView.font.file := fontMap("OpenSans")
     TextView.font.size := 24.0
     TextView.fill := Color.Black
+    virtualMode := VirtualMode.Bars
 
     History.url().param("screen") match {
       case Some(screenName) => {
@@ -32,10 +34,15 @@ object PreviewScreen extends DesignerScreen {
 
   private def render(fontMap: FontMap, entry: Entry, container: Container): Unit = entry match {
     case Image(id, fileName, x, y, opacity) => {
-      val v = new ImageView(s"/working/assets/$fileName")
+      val v = new ImageView
+      HTMLImage(History.url().withPart(s"/working/assets/$fileName")).foreach { image =>
+        image.resize(image.width.vw, image.height.vh).foreach { resized =>
+          v.image := resized
+        }
+      }
       v.id := id
-      v.position.x := x
-      v.position.y := y
+      v.position.x := x.vx
+      v.position.y := y.vy
       v.opacity := opacity
       v.event.click.on(scribe.info(s"Image clicked: $id."))
       container.children += v
@@ -45,10 +52,10 @@ object PreviewScreen extends DesignerScreen {
       v.id := id
       v.value := text
       v.font.file := fontMap(font)
-      v.font.size := size
+      v.font.size := size.vf
       v.fill := Color.fromLong(color)
-      v.position.x := x
-      v.position.y := y
+      v.position.x := x.vx
+      v.position.y := y.vy
       v.opacity := opacity
       v.event.click.on(scribe.info(s"Text clicked: $id."))
 
@@ -65,6 +72,11 @@ object PreviewScreen extends DesignerScreen {
       c.id := id
       container.children += c
       children.foreach(render(fontMap, _, c))
+    }
+    case Root(width, height, children) => {
+      virtualWidth := width
+      virtualHeight := height
+      children.foreach(render(fontMap, _, container))
     }
   }
 }

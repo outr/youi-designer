@@ -6,6 +6,10 @@ sealed trait Entry {
   def id: String
 }
 
+case class Root(width: Double, height: Double, children: List[Entry]) extends Entry {
+  override def id: String = "root"
+}
+
 case class Image(var id: String,
                  var fileName: String,
                  x: Double,

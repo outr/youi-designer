@@ -147,14 +147,15 @@ object ImportScreen extends DesignerScreen {
             image.toDataURL.foreach { dataURL =>
               communication.saveImage(psdFileName, "preview.png", dataURL)
             }
-          }
-          previewElements.children := Vector.empty
-          fileNames = Set.empty
-          val entries = processChildren(tree.children().toList)
-          val root = model.Group("root", entries)
-          communication.saveImport(psdFileName, root)
 
-          scribe.info(s"Finished processing $psdFileName!")
+            previewElements.children := Vector.empty
+            fileNames = Set.empty
+            val entries = processChildren(tree.children().toList)
+            val root = model.Root(image.width, image.height, entries)
+            communication.saveImport(psdFileName, root)
+
+            scribe.info(s"Finished processing $psdFileName!")
+          }
         } catch {
           case t: Throwable => t.printStackTrace()
         }
