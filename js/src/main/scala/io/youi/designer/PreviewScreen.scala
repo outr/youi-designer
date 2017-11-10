@@ -37,6 +37,7 @@ object PreviewScreen extends DesignerScreen {
       v.position.x := x
       v.position.y := y
       v.opacity := opacity
+      v.event.click.on(scribe.info(s"Image clicked: $id."))
       container.children += v
     }
     case Text(id, text, font, size, color, alignment, x, y, opacity) => {
@@ -49,6 +50,7 @@ object PreviewScreen extends DesignerScreen {
       v.position.x := x
       v.position.y := y
       v.opacity := opacity
+      v.event.click.on(scribe.info(s"Text clicked: $id."))
 
       alignment match {
         case Horizontal.Left => // Nothing to do

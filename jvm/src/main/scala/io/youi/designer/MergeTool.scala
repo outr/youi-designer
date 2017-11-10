@@ -54,7 +54,7 @@ class MergeTool(directories: List[File]) {
           val asset = new File(ServerDesignerApplication.assets, fileName.toString)
           if (asset.exists()) scribe.warn(s"Asset already exists! ${i.fileName}")
           IO.stream(file, asset)
-          hashMap += sha1 -> file
+          hashMap += sha1 -> asset
         }
       }
     }
