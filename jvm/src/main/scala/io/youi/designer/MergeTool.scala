@@ -15,12 +15,9 @@ import scala.language.postfixOps
 class MergeTool(directories: List[File]) {
   private var hashMap = Map.empty[String, File]
 
-  private lazy val working = new File(ServerDesignerApplication.outputDirectory, "working")
-  private lazy val assets = new File(working, "assets")
-
   def merge(): Unit = {
-    IO.delete(working)
-    assets.mkdirs()
+    IO.delete(ServerDesignerApplication.working)
+    ServerDesignerApplication.assets.mkdirs()
 
     mergeRecursive(directories)
   }
@@ -40,7 +37,7 @@ class MergeTool(directories: List[File]) {
     val json = JsonUtil.toJson(entry)
     val jsonString = json.pretty(Printer.spaces2)
     val jsonFileName = FileName(s"${directory.getName}.json")
-    IO.stream(jsonString, new File(working, jsonFileName.toString))
+    IO.stream(jsonString, new File(ServerDesignerApplication.working, jsonFileName.toString))
   }
 
   private def processEntry(directory: File, entry: Entry): Unit = entry match {
@@ -51,10 +48,10 @@ class MergeTool(directories: List[File]) {
         case Some(existing) => i.fileName = existing.getName
         case None => {
           val fileName = FileName(i.fileName).deduplicate { fn =>
-            new File(assets, fn).exists()
+            new File(ServerDesignerApplication.assets, fn).exists()
           }
           i.fileName = fileName.toString
-          val asset = new File(assets, fileName.toString)
+          val asset = new File(ServerDesignerApplication.assets, fileName.toString)
           if (asset.exists()) scribe.warn(s"Asset already exists! ${i.fileName}")
           IO.stream(file, asset)
           hashMap += sha1 -> file

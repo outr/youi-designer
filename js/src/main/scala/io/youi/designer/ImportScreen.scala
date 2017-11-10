@@ -2,15 +2,12 @@ package io.youi.designer
 
 import com.outr.psd.{PSD, PSDNode}
 import io.youi._
-import io.youi.app.screen.{PathActivation, UIScreen}
 import io.youi.component.mixins.ScrollSupport
 import io.youi.component.{Container, ImageView, TextView}
 import io.youi.datatransfer.DataTransferManager
-import io.youi.font.{Font, GoogleFont, OpenTypeFont}
-import io.youi.image.{HTMLImage, Image}
+import io.youi.image.HTMLImage
 import io.youi.paint.{Border, Paint, Stroke}
 import org.scalajs.dom._
-import profig.JsonUtil
 import reactify._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -19,8 +16,8 @@ import scala.concurrent.Future
 object ImportScreen extends DesignerScreen {
   private lazy val dataTransfer = new DataTransferManager
 
-  override def createUI(): Future[Unit] = OpenTypeFont.fromURL(GoogleFont.`Open Sans`.regular).map { font =>
-    TextView.font.file := font
+  override def createUI(): Future[Unit] = FontMap().map { fontMap =>
+    TextView.font.file := fontMap("OpenSans")
     TextView.font.size := 24.0
     TextView.fill := Color.Black
 
@@ -83,7 +80,7 @@ object ImportScreen extends DesignerScreen {
           val fontColor = Color.fromRGBA(colors(0).toInt, colors(1).toInt, colors(2).toInt, (colors(3) / 255.0) * export.opacity)
           val t = new TextView
           t.value := text.value
-          FontMap(fontName).foreach(t.font.file := _)
+          t.font.file := fontMap(fontName)
           t.font.size := fontSize
           t.fill := fontColor
           val alignment = text.font.alignment.head match {
@@ -101,8 +98,9 @@ object ImportScreen extends DesignerScreen {
             }
           }
           t.position.middle := export.top + (export.height / 2.0)
+
           previewElements.children += t
-          Some(model.Text(export.name, text.value, fontName, fontSize, fontColor.value, alignment, export.left, export.top, export.width, export.height, export.opacity))
+          Some(model.Text(export.name, text.value, fontName, fontSize, fontColor.value, alignment, t.position.left, t.position.top, export.opacity))
         } else {
           if (export.width > 0.0 && export.height > 0.0) {
             val view = new ImageView
@@ -115,7 +113,7 @@ object ImportScreen extends DesignerScreen {
               if (!b) fileNames += fn
               b
             }.toString
-            val img = model.Image(export.name, fileName, export.left, export.top, export.width, export.height, export.opacity)
+            val img = model.Image(export.name, fileName, export.left, export.top, export.opacity)
             HTMLImage(png).foreach { image =>
               image.toDataURL.foreach { dataURL =>
                 communication.saveImage(psdFileName, img.fileName, dataURL)

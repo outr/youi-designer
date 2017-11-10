@@ -8,12 +8,15 @@ import profig.Config
 
 object ServerDesignerApplication extends ServerApplication with DesignerApplication {
   lazy val outputDirectory: File = new File(Config("designer.output").as[Option[String]].getOrElse("output"))
+  lazy val working = new File(ServerDesignerApplication.outputDirectory, "working")
+  lazy val assets = new File(working, "assets")
 
   handler.matcher(
     combined.any(
       path.exact("/"),
       path.exact("/import"),
-      path.exact("/merge")
+      path.exact("/merge"),
+      path.exact("/preview")
     )
   ).page()
 

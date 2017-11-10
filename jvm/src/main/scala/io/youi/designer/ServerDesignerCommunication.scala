@@ -41,4 +41,14 @@ trait ServerDesignerCommunication extends DesignerCommunication {
     val tool = new MergeTool(directories.map(new File(ServerDesignerApplication.outputDirectory, _)))
     tool.merge()
   }
+
+  override def loadScreen(screenName: String): Future[Option[Group]] = Future {
+    val jsonFile = new File(ServerDesignerApplication.working, s"$screenName.json")
+    if (jsonFile.isFile) {
+      val jsonString = IO.stream(jsonFile, new StringBuilder).toString
+      Option(JsonUtil.fromJsonString[Group](jsonString))
+    } else {
+      None
+    }
+  }
 }

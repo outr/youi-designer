@@ -1,7 +1,6 @@
 package io.youi.designer
 
 import io.youi.{Color, ui}
-import io.youi.app.screen.{PathActivation, UIScreen}
 import io.youi.component.mixins.ScrollSupport
 import io.youi.component._
 import io.youi.font.{GoogleFont, OpenTypeFont}

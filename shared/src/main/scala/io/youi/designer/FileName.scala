@@ -33,7 +33,7 @@ object FileName {
     if (parts.headOption.exists(_.matches("[0-9]+"))) {
       parts = parts.tail
     }
-    val increment = if (parts.last.matches("[0-9]+")) {
+    val increment = if (parts.nonEmpty && parts.last.matches("[0-9]+")) {
       val i = parts.last.toInt
       parts = parts.reverse.tail.reverse
       i

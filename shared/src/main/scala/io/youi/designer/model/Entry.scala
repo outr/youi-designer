@@ -10,8 +10,6 @@ case class Image(var id: String,
                  var fileName: String,
                  x: Double,
                  y: Double,
-                 width: Double,
-                 height: Double,
                  opacity: Double) extends Entry
 
 case class Group(var id: String, children: List[Entry]) extends Entry
@@ -24,6 +22,4 @@ case class Text(var id: String,
                 alignment: Horizontal,
                 x: Double,
                 y: Double,
-                width: Double,
-                height: Double,
                 opacity: Double) extends Entry

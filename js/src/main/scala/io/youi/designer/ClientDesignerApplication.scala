@@ -10,6 +10,7 @@ object ClientDesignerApplication extends ClientApplication with DesignerApplicat
 
   val importScreen: ImportScreen.type = ImportScreen
   val mergeScreen: MergeScreen.type = MergeScreen
+  val previewScreen: PreviewScreen.type = PreviewScreen
 
   @JSExportTopLevel("application")
   def main(): Unit = {

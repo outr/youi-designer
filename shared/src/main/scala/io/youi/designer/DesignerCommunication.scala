@@ -13,4 +13,6 @@ trait DesignerCommunication extends Communication {
   @server def listConversions(): Future[List[String]]
 
   @server def mergeConversions(directories: List[String]): Future[Unit]
+
+  @server def loadScreen(screenName: String): Future[Option[Group]]
 }
