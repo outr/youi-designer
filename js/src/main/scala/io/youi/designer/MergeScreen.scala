@@ -1,7 +1,6 @@
 package io.youi.designer
 
 import io.youi.{Color, ui}
-import io.youi.component.mixins.ScrollSupport
 import io.youi.component._
 import io.youi.font.{GoogleFont, OpenTypeFont}
 import io.youi.image.Image
@@ -19,20 +18,21 @@ object MergeScreen extends DesignerScreen {
     position.top := 10.0
   }
 
-  private lazy val previews = new TypedContainer[ConversionPreview] with ScrollSupport {
+  private lazy val previews = new TypedContainer[ConversionPreview] {
     position.top := 100.0
-    size.width := ui.width
-    size.height := ui.height
+    size.width := ui.size.width
+    size.height := ui.size.height
     layout := new FlowLayout(Margins(5.0, 5.0, 5.0, 5.0))
   }
 
   override def createUI(): Future[Unit] = for {
     directories <- communication.listConversions()
-    font <- OpenTypeFont.fromURL(GoogleFont.`Open Sans`.regular)
+    font <- GoogleFont.`Open Sans`.regular.load()
   } yield {
-    TextView.font.file := font
+    TextView.font.family := font
+    TextView.font.weight := font
     TextView.font.size := 24.0
-    TextView.fill := Color.Black
+    TextView.color := Color.Black
     directories.foreach { directory =>
       val preview = new ConversionPreview(directory)
       previews.children += preview
@@ -48,6 +48,7 @@ object MergeScreen extends DesignerScreen {
     val directories = previews.children().collect {
       case preview if preview.selected() => preview.directory
     }.toList
+    scribe.info(s"Merging $directories...")
     communication.mergeConversions(directories)
   }
 }
@@ -57,7 +58,7 @@ class ConversionPreview(val directory: String) extends Container {
 
   private val heading = new TextView {
     value := directory
-    fill := Color.SteelBlue
+    color := Color.SteelBlue
   }
 
   private val preview = new ImageView {
@@ -70,7 +71,7 @@ class ConversionPreview(val directory: String) extends Container {
   }
 
   layout := new VerticalLayout(10.0)
-  border := Border(Stroke(Color.Black))
+//  border := Border(Stroke(Color.Black))
   padding := 5.0
 
   background := {
@@ -103,7 +104,7 @@ class Button extends Container {
   val text: TextView = new TextView
 
   padding := 15.0
-  border := Border(Stroke(Color.Black), 5.0)
+//  border := Border(Stroke(Color.Black), 5.0)
   background := {
     if (event.pointer.downState()) {
       Paint.vertical(size.height).distributeColors(

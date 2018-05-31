@@ -10,9 +10,11 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 object PreviewScreen extends DesignerScreen with VirtualSizeSupport {
   override def createUI(): Future[Unit] = FontMap().map { fontMap =>
-    TextView.font.file := fontMap("OpenSans")
+    val font = fontMap("OpenSans")
+    TextView.font.family := font
+    TextView.font.weight := font
     TextView.font.size := 24.0
-    TextView.fill := Color.Black
+    TextView.color := Color.Black
     virtualMode := VirtualMode.Bars
 
     History.url().param("screen") match {
@@ -51,9 +53,11 @@ object PreviewScreen extends DesignerScreen with VirtualSizeSupport {
       val v = new TextView
       v.id := id
       v.value := text
-      v.font.file := fontMap(font)
+      val fontWeight = fontMap(font)
+      v.font.family := fontWeight
+      v.font.weight := fontWeight
       v.font.size := size.vf
-      v.fill := Color.fromLong(color)
+      v.color := Color.fromLong(color)
       v.position.x := x.vx
       v.position.y := y.vy
       v.opacity := opacity

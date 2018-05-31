@@ -2,7 +2,6 @@ package io.youi.designer
 
 import com.outr.psd.{PSD, PSDNode}
 import io.youi._
-import io.youi.component.mixins.ScrollSupport
 import io.youi.component.{Container, ImageView, TextView}
 import io.youi.datatransfer.DataTransferManager
 import io.youi.image.HTMLImage
@@ -17,25 +16,27 @@ object ImportScreen extends DesignerScreen {
   private lazy val dataTransfer = new DataTransferManager
 
   override def createUI(): Future[Unit] = FontMap().map { fontMap =>
-    TextView.font.file := fontMap("OpenSans")
+    val font = fontMap("OpenSans")
+    TextView.font.family := font
+    TextView.font.weight := font
     TextView.font.size := 24.0
-    TextView.fill := Color.Black
+    TextView.color := Color.Black
 
     val heading = new TextView {
       id := "heading"
       value := "Import Tool"
       font.size := 48.0
-      fill := Color.SteelBlue
+      color := Color.SteelBlue
       position.center := container.position.center
       position.top := 10.0
     }
 
-    val previewContainer = new Container with ScrollSupport {
+    val previewContainer = new Container {
       id := "previewContainer"
       position.top := heading.position.bottom + 10.0
       size.width := container.size.width - 5.0
       size.height := container.size.height - position.top - 5.0
-      border := Border(Stroke(Color.Black))
+//      border := Border(Stroke(Color.Black))
     }
     val previewImage = new ImageView {
       id := "previewImage"
@@ -80,9 +81,11 @@ object ImportScreen extends DesignerScreen {
           val fontColor = Color.fromRGBA(colors(0).toInt, colors(1).toInt, colors(2).toInt, (colors(3) / 255.0) * export.opacity)
           val t = new TextView
           t.value := text.value
-          t.font.file := fontMap(fontName)
+          val font = fontMap(fontName)
+          t.font.family := font
+          t.font.weight := font
           t.font.size := fontSize
-          t.fill := fontColor
+          t.color := fontColor
           val alignment = text.font.alignment.head match {
             case "center" => {
               t.position.center := export.left + (export.width / 2.0)
